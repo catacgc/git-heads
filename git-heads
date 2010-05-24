@@ -6,6 +6,8 @@
 ##     -a, --all     list all branches
 ##     -l, --local   only local branches
 ##     -r, --remote  only remote branches
+##     --branches    list branches
+##     --heads       only branches without children
 
 git_exec_path="$(git --exec-path)"
 
@@ -30,18 +32,29 @@ else
 fi
 git_branch_args="--color=never"
 git_log_args="--color=$color_auto -n 1"
+branches=""
+heads="true"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
         (-a|--all)
-            git_branch_args="$git_branch_args -a"
+            branches="-a"
             shift
             ;;
         (-l|--local)
+            branches=""
             shift
             ;;
         (-r|--remote)
-            git_branch_args="$git_branch_args -r"
+            branches="-r"
+            shift
+            ;;
+        (--branches)
+            heads="false"
+            shift
+            ;;
+        (--heads)
+            heads="true"
             shift
             ;;
         (--contains|--merged|--no-merged)
@@ -52,9 +65,11 @@ while [ "$#" -gt 0 ]; do
                 git_branch_args="$git_branch_args '$1=HEAD'"
                 shift
             fi
+            heads="false"
             ;;
         (--contains=*|--merged=*|--no-merged=*)
             git_branch_args="$git_branch_args '$1'"
+            heads="false"
             shift
             ;;
         (--color)
@@ -96,8 +111,41 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-eval git branch $git_branch_args | grep -v '^\* (no branch)$\| -> ' \
-        | sed 's/^..//' | while read -r ref; do
+branches() {
+    eval git branch $branches $git_branch_args \
+            | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
+            | xargs git rev-parse --revs-only | sort -u
+}
+
+heads() {
+    local LANG=C  ## speed up sort and uniq a bit
+    local tmp1="$(mktemp --tmpdir=/dev/shm || mktemp)"
+    local tmp2="$(mktemp --tmpdir=/dev/shm || mktemp)"
+    local tmp
+
+#   git for-each-ref --format='%(objectname)' --sort=objectname \
+#           refs/heads refs/remotes | uniq | while read -r ref; do
+    git branch --color=never $branches \
+            | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
+            | xargs git rev-parse --revs-only | sort -u | while read -r ref; do
+        git branch --color=never $branches --no-merged="$ref" \
+                | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
+                | xargs git rev-parse --revs-only | { echo "$ref"; cat; } \
+                | sort - "$tmp1" | if [ -z "$tmp" ]; then cat; else uniq -d; fi > "$tmp2"
+        tmp="$tmp1"
+        tmp1="$tmp2"
+        tmp2="$tmp"
+    done
+
+    cat "$tmp1"
+    rm --force -- "$tmp1" "$tmp2"
+}
+
+if "$heads"; then
+    heads
+else
+    branches
+fi | while read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit 1
 done | tail -n +2 | git_pager
