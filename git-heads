@@ -60,9 +60,9 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
         (--contains|--merged|--no-merged)
-            if [ -n "$2" -a "$2" = "${2#-}" ]; then
-                git_branch_args="$git_branch_args '$1=$2'"
-                shift 2
+            if [ -n "$2" -a "$2" = "${2#-}" ]; then         ## If it begins with
+                git_branch_args="$git_branch_args '$1=$2'"  ## a "-" it is just
+                shift 2                                     ## another option.
             else
                 git_branch_args="$git_branch_args '$1=HEAD'"
                 shift
@@ -74,8 +74,8 @@ while [ "$#" -gt 0 ]; do
             heads="false"
             shift
             ;;
-        (--color)
-            case "$2" in
+        (--color)         ## Handle git-log's color option explicitly because
+            case "$2" in  ## it gets confused by piping to git_pager.
                 (auto)
                     git_log_args="$git_log_args --color=$color_auto"
                     shift 2
@@ -117,6 +117,8 @@ branches() {
             | xargs git rev-parse --revs-only | sort -u
 }
 
+## A head is a branch without children.  Or, a branch is a head if it wasn't
+## merged in any other branch.
 heads() {
     local LANG=C                      ## speed up sort and uniq a bit
     local refs="$(branches | wc -l)"
@@ -129,7 +131,7 @@ heads() {
 if "$heads"; then
     heads
 else
-    eval branches $git_branch_args
+    eval branches $git_branch_args  ## let git-rev-list do the sorting
 fi | sed 's/.*/&^..&/' | xargs git rev-list | while read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit 1
