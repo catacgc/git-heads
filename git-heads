@@ -31,22 +31,22 @@ else
     color_auto="never"
 fi
 git_branch_args="--color=never"
+git_branch_scope=""
 git_log_args="--color=$color_auto -n 1"
-branches=""
 heads="true"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
         (-a|--all)
-            branches="-a"
+            git_branch_scope="-a"
             shift
             ;;
         (-l|--local)
-            branches=""
+            git_branch_scope=""
             shift
             ;;
         (-r|--remote)
-            branches="-r"
+            git_branch_scope="-r"
             shift
             ;;
         (--branches)
@@ -112,39 +112,26 @@ while [ "$#" -gt 0 ]; do
 done
 
 branches() {
-    eval git branch $branches $git_branch_args \
-            | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
+    local LANG=C  ## speed up sort and uniq a bit
+
+    git branch --color=never $git_branch_scope "$@" \
+            | sed '/^\* (no branch)$\| -> /d;s/^..//' \
             | xargs git rev-parse --revs-only | sort -u
 }
 
 heads() {
-    local LANG=C  ## speed up sort and uniq a bit
-    local tmp1="$(mktemp --tmpdir=/dev/shm || mktemp)"
-    local tmp2="$(mktemp --tmpdir=/dev/shm || mktemp)"
-    local tmp
+    local LANG=C                      ## speed up sort and uniq a bit
+    local refs="$(branches | wc -l)"
 
-#   git for-each-ref --format='%(objectname)' --sort=objectname \
-#           refs/heads refs/remotes | uniq | while read -r ref; do
-    git branch --color=never $branches \
-            | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
-            | xargs git rev-parse --revs-only | sort -u | while read -r ref; do
-        git branch --color=never $branches --no-merged="$ref" \
-                | grep -v '^\* (no branch)$\| -> ' | sed 's/^..//' \
-                | xargs git rev-parse --revs-only | { echo "$ref"; cat; } \
-                | sort - "$tmp1" | if [ -z "$tmp" ]; then cat; else uniq -d; fi > "$tmp2"
-        tmp="$tmp1"
-        tmp1="$tmp2"
-        tmp2="$tmp"
-    done
-
-    cat "$tmp1"
-    rm --force -- "$tmp1" "$tmp2"
+    branches | while read -r ref; do
+        branches --no-merged="$ref" | { echo "$ref"; cat; } | sort -u
+    done | sort | uniq -c | sed -n "s/^[[:space:]]*$refs[[:space:]]*//p"
 }
 
 if "$heads"; then
     heads
 else
-    branches
+    eval branches $git_branch_args
 fi | while read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit 1
