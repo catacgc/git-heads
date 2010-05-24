@@ -1,0 +1,56 @@
+#!/bin/sh
+##
+## git-heads -- show unmerged branches with git-log(1)
+##
+## Usage: git-heads [OPTIONS] [git-log-OPTION...]
+##     -a, --all     list all branches
+##     -l, --local   only local branches
+##     -r, --remote  only remote branches
+
+git_exec_path="$(git --exec-path)"
+
+ifs="$IFS"
+IFS=":"
+for dir in $git_exec_path; do
+    [ -f "$dir/git-sh-setup" -a -r "$dir/git-sh-setup" ] \
+            && . "$dir/git-sh-setup" && break
+done || {
+    echo "fatal: unable to find and source git-sh-setup in" \
+         "GIT_EXEC_PATH=$git_exec_path" >&2
+    exit 1
+}
+IFS="$ifs"
+
+require_work_tree
+
+case "$1" in
+    (-a|--all)
+        git_branch_args="-a"
+        shift
+        ;;
+    (-l|--local)
+        git_branch_args=""
+        shift
+        ;;
+    (-r|--remote)
+        git_branch_args="-r"
+        shift
+        ;;
+    (*)
+        git_branch_args=""
+        ;;
+esac
+
+if git config --get-colorbool color.log; then
+    git_log_args="--color=always"
+else
+    git_log_args="--color=never"
+fi
+
+git branch $git_branch_args --no-merged \
+        | { [ "$git_branch_args" != "-r" ] && echo HEAD; cat; } \
+        | while read -r ref; do
+    echo
+    git log $git_log_args -n 1 "$@" "$ref" || exit 1
+done | tail -n +2 | git_pager
+
