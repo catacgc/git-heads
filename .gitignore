@@ -1,0 +1,6 @@
+##
+## .gitignore -- gitignore(5) specifies ignored files
+##
+
+*.sw?
+
