@@ -130,7 +130,7 @@ if "$heads"; then
     heads
 else
     eval branches $git_branch_args
-fi | while read -r ref; do
+fi | sed 's/.*/&^..&/' | xargs git rev-list | while read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit 1
 done | tail -n +2 | git_pager
