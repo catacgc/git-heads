@@ -23,34 +23,82 @@ IFS="$ifs"
 
 require_work_tree
 
-case "$1" in
-    (-a|--all)
-        git_branch_args="-a"
-        shift
-        ;;
-    (-l|--local)
-        git_branch_args=""
-        shift
-        ;;
-    (-r|--remote)
-        git_branch_args="-r"
-        shift
-        ;;
-    (*)
-        git_branch_args=""
-        ;;
-esac
-
 if git config --get-colorbool color.log; then
-    git_log_args="--color=always"
+    color_auto="always"
 else
-    git_log_args="--color=never"
+    color_auto="never"
 fi
+git_branch_args="--color=never"
+git_log_args="--color=$color_auto -n 1"
 
-git branch $git_branch_args --no-merged \
-        | { [ "$git_branch_args" != "-r" ] && echo HEAD; cat; } \
-        | while read -r ref; do
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        (-a|--all)
+            git_branch_args="$git_branch_args -a"
+            shift
+            ;;
+        (-l|--local)
+            shift
+            ;;
+        (-r|--remote)
+            git_branch_args="$git_branch_args -r"
+            shift
+            ;;
+        (--contains|--merged|--no-merged)
+            if [ -n "$2" -a "$2" = "${2#-}" ]; then
+                git_branch_args="$git_branch_args '$1=$2'"
+                shift 2
+            else
+                git_branch_args="$git_branch_args '$1=HEAD'"
+                shift
+            fi
+            ;;
+        (--contains=*|--merged=*|--no-merged=*)
+            git_branch_args="$git_branch_args '$1'"
+            shift
+            ;;
+        (--color)
+            case "$2" in
+                (always)
+                    git_log_args="$git_log_args --color=always"
+                    shift 2
+                    ;;
+                (auto)
+                    git_log_args="$git_log_args --color=$color_auto"
+                    shift 2
+                    ;;
+                (never)
+                    git_log_args="$git_log_args --color=never"
+                    shift 2
+                    ;;
+                (*)
+                    git_log_args="$git_log_args --color=always"
+                    shift
+                    ;;
+            esac
+            ;;
+        (--color=auto)
+            git_log_args="$git_log_args --color=$color_auto"
+            shift
+            ;;
+        (--color=*)
+            git_log_args="$git_log_args '$1'"
+            shift
+            ;;
+        (--no-color)
+            git_log_args="$git_log_args --color=never"
+            shift
+            ;;
+        (*)
+            git_log_args="$git_log_args '$1'"
+            shift
+            ;;
+    esac
+done
+
+eval git branch $git_branch_args | grep -v '^\* (no branch)$\| -> ' \
+        | sed 's/^..//' | while read -r ref; do
     echo
-    git log $git_log_args -n 1 "$@" "$ref" || exit 1
+    eval git log $git_log_args "'$ref'" || exit 1
 done | tail -n +2 | git_pager
 
