@@ -2,12 +2,14 @@
 ##
 ## git-heads -- show unmerged branches with git-log(1)
 ##
-## Usage: git-heads [OPTIONS] [git-log-OPTION...]
-##     -a, --all     list all branches
-##     -l, --local   only local branches
-##     -r, --remote  only remote branches
-##     --branches    list branches
-##     --heads       only branches without children
+## Usage: git-heads [--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [<commit>]] [git-log-OPTION]...
+## Usage: git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]...
+## Options:
+##     -a, --all                 list all branches
+##     -l, --local               only local branches
+##     -r, --remote              only remote branches
+##     -b, --branch, --branches  list branches
+##     -h, --head, --heads       only branches without children
 
 git_exec_path="$(git --exec-path)"
 
@@ -49,11 +51,11 @@ while [ "$#" -gt 0 ]; do
             git_branch_scope="-r"
             shift
             ;;
-        (--branches)
+        (-b|--branch|--branches)
             heads="false"
             shift
             ;;
-        (--heads)
+        (-h|--head|--heads)
             heads="true"
             shift
             ;;
@@ -74,16 +76,12 @@ while [ "$#" -gt 0 ]; do
             ;;
         (--color)
             case "$2" in
-                (always)
-                    git_log_args="$git_log_args --color=always"
-                    shift 2
-                    ;;
                 (auto)
                     git_log_args="$git_log_args --color=$color_auto"
                     shift 2
                     ;;
-                (never)
-                    git_log_args="$git_log_args --color=never"
+                (always|never)
+                    git_log_args="$git_log_args --color=$2"
                     shift 2
                     ;;
                 (*)
