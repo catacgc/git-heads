@@ -132,7 +132,7 @@ if "$heads"; then
     heads
 else
     eval branches $git_branch_args  ## let git-rev-list do the sorting
-fi | sed 's/.*/&^..&/' | xargs git rev-list | while read -r ref; do
+fi | git rev-list --stdin --no-walk | while read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit 1
 done | tail -n +2 | git_pager
