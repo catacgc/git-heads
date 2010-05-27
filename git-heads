@@ -1,15 +1,10 @@
 #!/bin/sh
 ##
-## git-heads -- show unmerged branches with git-log(1)
+## git-heads -- show branches without child commits with git-log(1)
 ##
-## Usage: git-heads [--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [<commit>]] [git-log-OPTION]...
-## Usage: git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]...
-## Options:
-##     -a, --all                 list all branches
-##     -l, --local               only local branches
-##     -r, --remote              only remote branches
-##     -b, --branch, --branches  list branches
-##     -h, --head, --heads       only branches without children
+
+USAGE="[--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [COMMIT]] [git-log-OPTION]...
+       git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]..."
 
 git_exec_path="$(git --exec-path)"
 
@@ -34,11 +29,14 @@ else
 fi
 git_branch_args="--color=never"
 git_branch_scope=""
-git_log_args="--color=$color_auto -n 1"
+git_log_args="--color=$color_auto --max-count=1"
 heads="true"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        (-h|--help)  ## Automatically handled by git(1) and git-sh-setup.  Just
+            exit 0   ## set $USAGE.
+            ;;
         (-a|--all)
             git_branch_scope="-a"
             shift
@@ -55,7 +53,7 @@ while [ "$#" -gt 0 ]; do
             heads="false"
             shift
             ;;
-        (-h|--head|--heads)
+        (--head|--heads)
             heads="true"
             shift
             ;;
@@ -110,8 +108,8 @@ while [ "$#" -gt 0 ]; do
 done
 
 branches() {
-    git branch --color=never $git_branch_scope "$@" \
-            | sed '/^\* (no branch)$\| -> /d;s/^..//' \
+    git branch $git_branch_scope "$@" --color=never \
+            | sed '/^\* (no branch)$\| -> /d;s/^[ *] //' \
             | xargs git rev-parse --revs-only
 }
 
@@ -138,6 +136,6 @@ else
     eval branches $git_branch_args  ## let git-rev-list do the sorting
 fi | git rev-list --date-order --stdin --no-walk | while read -r ref; do
     echo
-    eval git log $git_log_args "'$ref'" || exit 1
+    eval git log $git_log_args "'$ref'" || exit "$?"
 done | tail -n +2 | git_pager
 
