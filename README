@@ -1,0 +1,63 @@
+% GIT-HEADS(1) GIT-HEAD(1)
+% Sebastian Schwarz <seschwar@googlemail.com>
+
+# NAME
+
+git-heads -- shows branches without child commits with `git-log`(1)
+
+# SYNOPSIS
+
+`git-heads` [`--all` | `--local` | `--remote`] [`--branches`] [(`--contains` | `--merged` | `--no-merged`) [*commit*]] [*git-log-option*]...
+
+`git-heads` [`--all` | `--local` | `--remote`] [`--heads`] [*git-log-option*]...
+
+# DESCRIPTION
+
+    hg heads
+    git branch ... | xargs -n1 git log ...
+    git-wtf
+
+# OPTIONS
+
+-a, \--all
+:   Show both local and remote branches which have no child commits.
+
+-l, \--local
+:   Show only local branches without children.
+    This is the default behavior.
+
+-r, \--remote
+:   Show only remote branches whitout children.
+
+-b, \--branch, \--branches
+:   Show branches whether they have child commits or not.
+    Like `git-branch`(1).
+
+\--contains [*commit*], \--merged [*commit*], \--no-merged [*commit*]
+:   Passed to `git-branch`(1).
+
+\--head, \--heads
+:   Show only branches without children.
+    This is the default behavior.
+
+*git-log-option*
+:   These options are passed to `git-log`(1) which is used to display the matching branches.
+
+# EXAMPLES
+
+Show the last five commits for every remote branch.
+
+    git heads --remote --branches --format=oneline -n 5
+
+Show the last three commits on every head in a graph.
+
+    git heads --all --graph -n 3
+
+# SEE ALSO
+
+`git`(1), `git-branch`(1), `git-log`(1)
+
+The documentation for the programs `git-wtf` and `hg heads`.
+
+Homepage: <http://github.com/seschwar/git-heads/>
+
