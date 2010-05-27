@@ -1,0 +1,32 @@
+# Dependencies
+
+In order to use `git-heads` you need:
+
+- [Git] 1.7.0.2 or newer
+- a Bourne Shell compatible shell: tested with bash, dash, pdksh and mksh
+- standard Unix utilities: cat, grep, sed, sort, tail, uniq, xargs
+- [pandoc] for generating the man page.
+
+# Installation
+
+Copy the `git-heads` script to some directory in your `$GIT_EXEC_PATH`
+or `$PATH` so that `git` can find it:
+
+    install -Dm755 git-heads /usr/local/bin/git-heads
+
+The `README` file can be converted to a man page using:
+
+    pandoc -sS -f markdown -t man -o git-heads.1 README
+
+Install it to somewhere in your `$MANPATH` or whereever your man page
+implementation can find it.
+
+    install -Dm644 git-heads.1 /usr/local/man/man1/git-heads.1
+
+# Usage
+
+Now you can simply run `git heads`.  For further notes on the usage
+see the `README` file or the `git-heads(1)` man page.
+
+[Git]: http://git-scm.com/
+[pandoc]: http://johnmacfarlane.net/pandoc/
