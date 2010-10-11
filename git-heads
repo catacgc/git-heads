@@ -103,32 +103,14 @@ main() {
                 mode="branches"
                 shift
                 ;;
-            (--color)         ## Handle git-log's color option explicitly because
-                case "$2" in  ## it gets confused by piping to git_pager.
-                    (auto)
-                        git_log_args="$git_log_args$N--color=$color_auto"
-                        shift 2
-                        ;;
-                    (always|never)
-                        git_log_args="$git_log_args$N--color=$2"
-                        shift 2
-                        ;;
-                    (*)
-                        git_log_args="$git_log_args$N--color=always"
-                        shift
-                        ;;
-                esac
+            (--color)
+                if test "$2" = auto; then
+                    git_log_args="$git_log_args$N--color=$color_auto"
+                    shift 2
+                fi
                 ;;
             (--color=auto)
                 git_log_args="$git_log_args$N--color=$color_auto"
-                shift
-                ;;
-            (--color=*)
-                git_log_args="$git_log_args$N$1"
-                shift
-                ;;
-            (--no-color)
-                git_log_args="$git_log_args$N--color=never"
                 shift
                 ;;
             (*)
