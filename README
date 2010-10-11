@@ -32,23 +32,24 @@ It uses `git-log`(1) to display the commit information.
 -a, \--all
 :   Show both local and remote branches which have no child commits.
 
--l, \--local
-:   Show only local branches without children.
-    This is the default behavior.
-
--r, \--remote
-:   Show only remote branches whitout children.
-
 -b, \--branch, \--branches
-:   Show branches whether they have child commits or not.
-    Like `git-branch`(1).
+:   Show branches regardless whether they have child commits or not.
+    Similar to `git-branch`(1).
 
 \--contains [*commit*], \--merged [*commit*], \--no-merged [*commit*]
 :   Passed to `git-branch`(1).
+    Implies `--branches`.
 
 \--head, \--heads
-:   Show only branches without children.
+:   Show only the tips of the branches without any children.
     This is the default behavior.
+
+-l, \--local
+:   Show only local branches.
+    This is the default behavior.
+
+-r, \--remote
+:   Show only remote branches.
 
 *git-log-option*
 :   These options are passed to `git-log`(1) which is used to display the matching branches.
