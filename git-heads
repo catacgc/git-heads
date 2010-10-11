@@ -5,6 +5,7 @@
 ## Licensed under the MIT License; see accompanying `LICENSE` file.
 ##
 
+## A newline character.
 N="
 "
 USAGE="[--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [COMMIT]] [git-log-OPTION]...
@@ -28,9 +29,11 @@ require_work_tree
 
 
 branches() {
-    git branch "$@" --color=never \
-            | sed -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//' \
-            | tr '\n' '\0' | xargs -0 git rev-parse --revs-only
+    ifs="$IFS"
+    IFS="$N"
+    git rev-parse --revs-only $(git branch "$@" --color=never | sed \
+            -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//')
+    IFS="$ifs"
 }
 
 
