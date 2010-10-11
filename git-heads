@@ -11,7 +11,7 @@ N="
 USAGE="[--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [COMMIT]] [git-log-OPTION]...
        git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]..."
 
-git_exec_path="$(git --exec-path)"
+git_exec_path="`git --exec-path`"
 
 ifs="$IFS"
 IFS=":"
@@ -31,8 +31,8 @@ require_work_tree
 branches() {
     ifs="$IFS"
     IFS="$N"
-    git rev-parse --revs-only $(git branch "$@" --color=never | sed \
-            -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//')
+    git rev-parse --revs-only `git branch "$@" --color=never | sed \
+            -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//'`
     IFS="$ifs"
 }
 
@@ -47,7 +47,7 @@ no_children() {
 ## A branch is a head which wasn't merged in any other branch.
 pairwise_unmerged() {
     local LANG=C                      ## speed up sort and uniq a bit
-    local refs="$(branches | wc -l)"
+    local refs="`branches | wc -l`"
 
     branches | sort -u | while IFS= read -r ref; do
         branches --no-merged="$ref" | { echo "$ref"; cat; } | sort -u
@@ -92,7 +92,7 @@ main() {
                 shift
                 ;;
             (--contains|--merged|--no-merged)
-                if test "$(expr "$2" : -)" -eq 1; then           ## $2 is
+                if test "`expr "$2" : -`" -eq 1; then           ## $2 is
                     git_branch_args="$git_branch_args$N$1=HEAD"  ## another
                     shift                                        ## argument
                 else
