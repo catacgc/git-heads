@@ -13,7 +13,7 @@ git_exec_path="$(git --exec-path)"
 ifs="$IFS"
 IFS=":"
 for dir in $git_exec_path; do
-    [ -f "$dir/git-sh-setup" -a -r "$dir/git-sh-setup" ] \
+    test -f "$dir/git-sh-setup" -a -r "$dir/git-sh-setup" \
             && . "$dir/git-sh-setup" && break
 done || {
     echo "fatal: unable to find and source git-sh-setup in" \
@@ -34,7 +34,7 @@ git_branch_scope=""
 git_log_args="--color=$color_auto --max-count=1"
 heads="true"
 
-while [ "$#" -gt 0 ]; do
+while test "$#" -gt 0; do
     case "$1" in
         (-h|--help)  ## Automatically handled by git(1) and git-sh-setup.  Just
             exit 0   ## set $USAGE.
@@ -60,7 +60,7 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
         (--contains|--merged|--no-merged)
-            if [ -n "$2" -a "$2" = "${2#-}" ]; then         ## If it begins with
+            if test -n "$2" -a "$2" = "${2#-}"; then        ## If it begins with
                 git_branch_args="$git_branch_args '$1=$2'"  ## a "-" it is just
                 shift 2                                     ## another option.
             else
@@ -118,7 +118,7 @@ branches() {
 ## git-rev-list topologically sort the revs and annotates the with their
 ## children.  Commits without children are heads.
 no_children() {
-    branches | git rev-list --children --stdin --topo-order | grep -v ' '
+    branches "$@" | git rev-list --children --stdin --topo-order | grep -v ' '
 }
 
 ## A branch is a head which wasn't merged in any other branch.
@@ -126,7 +126,7 @@ pairwise_unmerged() {
     local LANG=C                      ## speed up sort and uniq a bit
     local refs="$(branches | wc -l)"
 
-    branches | sort -u | while read -r ref; do
+    branches | sort -u | while IFS= read -r ref; do
         branches --no-merged="$ref" | { echo "$ref"; cat; } | sort -u
     done | sort | uniq -c | sed -n "s/^[[:space:]]*$refs[[:space:]]*//p"
 }
@@ -136,7 +136,7 @@ if "$heads"; then
     #pairwise_unmerged
 else
     eval branches $git_branch_args  ## let git-rev-list do the sorting
-fi | git rev-list --date-order --stdin --no-walk | while read -r ref; do
+fi | git rev-list --date-order --stdin --no-walk | while IFS= read -r ref; do
     echo
     eval git log $git_log_args "'$ref'" || exit "$?"
 done | tail -n +2 | git_pager
