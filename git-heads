@@ -111,8 +111,8 @@ done
 
 branches() {
     git branch $git_branch_scope "$@" --color=never \
-            | sed '/^\* (no branch)$\| -> /d;s/^[ *] //' \
-            | xargs git rev-parse --revs-only
+            | sed -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//' \
+            | tr '\n' '\0' | xargs -0 git rev-parse --revs-only
 }
 
 ## git-rev-list topologically sort the revs and annotates the with their
