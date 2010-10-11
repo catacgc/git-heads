@@ -5,11 +5,22 @@
 ## Licensed under the MIT License; see accompanying `LICENSE` file.
 ##
 
-## A newline character.
-N="
-"
-USAGE="[--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [COMMIT]] [git-log-OPTION]...
-       git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]..."
+USAGE="[OPTION | git-log-OPTION]..."
+LONG_USAGE="\
+Options:
+-a, --all                 list all branches/heads
+-b, --branch, --branches  list branches
+    --contains [COMMIT]   list only branches containing COMMIT
+    --head, --heads       list heads; the default
+-h, --help
+-l, --local               list only local branches/heads; the default
+    --merged [COMMIT]     list only branches reachable from COMMIT
+    --no-merged [COMMIT]  list only branches not reachable COMMIT
+-r, --remote              list only remote branches/heads
+
+For the git-log-OPTION see git-log(1)'s manual page."
+OPTIONS_SPEC=
+SUBDIRECTORY_OK="true"
 
 git_exec_path="`git --exec-path`"
 
@@ -25,7 +36,9 @@ done || {
 }
 IFS="$ifs"
 
-require_work_tree
+## A newline character.
+N="
+"
 
 
 branches() {
@@ -40,7 +53,7 @@ branches() {
 ## git-rev-list topologically sort the revs and annotates the with their
 ## children.  Commits without children are heads.
 no_children() {
-    branches "$@" | git rev-list --children --stdin --topo-order | grep -v ' '
+    branches "$@" | git rev-list --children --stdin --topo-order | sane_grep -v ' '
 }
 
 
@@ -75,7 +88,7 @@ main() {
     while test "$#" -gt 0; do
         case "$1" in
             (-h|--help)  ## Automatically handled by git(1) and git-sh-setup.  Just
-                exit 0   ## set $USAGE.
+                usage    ## set $USAGE.
                 ;;
             (-a|--all)
                 git_branch_scope="-a"
