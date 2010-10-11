@@ -1,9 +1,9 @@
-% GIT-HEADS(1) GIT-HEAD(1)
+% GIT-HEADS(1) GIT-HEADS(1)
 % Sebastian Schwarz <seschwar@googlemail.com>
 
 # NAME
 
-git-heads -- show branches without child commits with `git-log`(1)
+git-heads -- show branches without any child commits with `git-log`(1)
 
 # SYNOPSIS
 
@@ -15,7 +15,7 @@ git-heads -- show branches without child commits with `git-log`(1)
 
 Inspired by Mercurial's `heads` command this Git command's purpose is to display information about so-called "heads".
 Heads are commits which have no child commits.
-That means they are branches that have not been merged with any other branch.
+This also means that they are branches that have not been merged with any other branch.
 Do not confuse this definition of a head with Git's `HEAD` ref which points to the lastly checked out commit.
 Furthermore you also must not confuse it with `$GIT_DIR/refs/heads`, the directory where the references to your local branches are stored.
 
