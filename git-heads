@@ -89,12 +89,12 @@ main() {
                 shift
                 ;;
             (--contains|--merged|--no-merged)
-                if test "$(expr "$2" -)" -eq 1; then
+                if test "$(expr "$2" : -)" -eq 1; then           ## $2 is
+                    git_branch_args="$git_branch_args$N$1=HEAD"  ## another
+                    shift                                        ## argument
+                else
                     git_branch_args="$git_branch_args$N$1=$2"
                     shift 2
-                else
-                    git_branch_args="$git_branch_args$N$1=HEAD"
-                    shift
                 fi
                 mode="branches"
                 ;;
