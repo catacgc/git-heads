@@ -30,8 +30,7 @@ for dir in $git_exec_path; do
     test -f "$dir/git-sh-setup" -a -r "$dir/git-sh-setup" \
             && . "$dir/git-sh-setup" && break
 done || {
-    echo "fatal: unable to find and source git-sh-setup in" \
-         "GIT_EXEC_PATH=$git_exec_path" >&2
+    echo "fatal: unable to find and source git-sh-setup in $git_exec_path" >&2
     exit 1
 }
 IFS="$ifs"
@@ -41,30 +40,17 @@ N="
 "
 
 
-branches() {
-    ifs="$IFS"
-    IFS="$N"
-    git rev-parse --revs-only `git branch "$@" --color=never | sed \
-            -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//'`
-    IFS="$ifs"
+branch_refs() {
+    git branch "$@" --color=never | sed -e 's/^[ *] //' \
+            -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//'
 }
 
 
 ## git-rev-list topologically sort the revs and annotates the with their
 ## children.  Commits without children are heads.
-no_children() {
-    branches "$@" | git rev-list --children --stdin --topo-order | sane_grep -v ' '
-}
-
-
-## A branch is a head which wasn't merged in any other branch.
-pairwise_unmerged() {
-    local LANG=C                      ## speed up sort and uniq a bit
-    local refs="`branches | wc -l`"
-
-    branches | sort -u | while IFS= read -r ref; do
-        branches --no-merged="$ref" | { echo "$ref"; cat; } | sort -u
-    done | sort | uniq -c | sed -n "s/^[[:space:]]*$refs[[:space:]]*//p"
+childless_commits() {
+    branch_refs "$@" | git rev-list --children --stdin --topo-order \
+            | sane_grep -v ' '
 }
 
 
@@ -155,10 +141,10 @@ main() {
     IFS="$N"
     case "$mode" in
         (branches)
-            branches $git_branch_args $git_branch_scope
+            branch_refs $git_branch_args $git_branch_scope
             ;;
         (heads)
-            no_children $git_branch_scope
+            childless_commits $git_branch_scope
             ;;
         (*)
             die "unable to list commits for mode $mode"
