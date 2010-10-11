@@ -5,6 +5,8 @@
 ## Licensed under the MIT License; see accompanying `LICENSE` file.
 ##
 
+N="
+"
 USAGE="[--all | --local | --remote] [--branches] [(--contains | --merged | --no-merged) [COMMIT]] [git-log-OPTION]...
        git-heads [--all | --local | --remote] [--heads] [git-log-OPTION]..."
 
@@ -58,7 +60,7 @@ main() {
     fi
     git_branch_args="--color=never"
     git_branch_scope=""
-    git_log_args="--color=$color_auto --max-count=1"
+    git_log_args="--color=$color_auto$N--max-count=1"
     mode="heads"
 
     while test "$#" -gt 0; do
@@ -88,57 +90,58 @@ main() {
                 ;;
             (--contains|--merged|--no-merged)
                 if test "$(expr "$2" -)" -eq 1; then
-                    git_branch_args="$git_branch_args '$1=$2'"
+                    git_branch_args="$git_branch_args$N$1=$2"
                     shift 2
                 else
-                    git_branch_args="$git_branch_args '$1=HEAD'"
+                    git_branch_args="$git_branch_args$N$1=HEAD"
                     shift
                 fi
                 mode="branches"
                 ;;
             (--contains=*|--merged=*|--no-merged=*)
-                git_branch_args="$git_branch_args '$1'"
+                git_branch_args="$git_branch_args$N$1"
                 mode="branches"
                 shift
                 ;;
             (--color)         ## Handle git-log's color option explicitly because
                 case "$2" in  ## it gets confused by piping to git_pager.
                     (auto)
-                        git_log_args="$git_log_args --color=$color_auto"
+                        git_log_args="$git_log_args$N--color=$color_auto"
                         shift 2
                         ;;
                     (always|never)
-                        git_log_args="$git_log_args --color=$2"
+                        git_log_args="$git_log_args$N--color=$2"
                         shift 2
                         ;;
                     (*)
-                        git_log_args="$git_log_args --color=always"
+                        git_log_args="$git_log_args$N--color=always"
                         shift
                         ;;
                 esac
                 ;;
             (--color=auto)
-                git_log_args="$git_log_args --color=$color_auto"
+                git_log_args="$git_log_args$N--color=$color_auto"
                 shift
                 ;;
             (--color=*)
-                git_log_args="$git_log_args '$1'"
+                git_log_args="$git_log_args$N$1"
                 shift
                 ;;
             (--no-color)
-                git_log_args="$git_log_args --color=never"
+                git_log_args="$git_log_args$N--color=never"
                 shift
                 ;;
             (*)
-                git_log_args="$git_log_args '$1'"
+                git_log_args="$git_log_args$N$1"
                 shift
                 ;;
         esac
     done
 
+    IFS="$N"
     case "$mode" in
         (branches)
-            eval branches $git_branch_args $git_branch_scope
+            branches $git_branch_args $git_branch_scope
             ;;
         (heads)
             no_children $git_branch_scope
@@ -149,7 +152,7 @@ main() {
     esac | git rev-list --date-order --stdin --no-walk \
             | while IFS= read -r ref; do
         echo
-        eval git log $git_log_args "'$ref'" -- || exit "$?"
+        git log $git_log_args "$ref" -- || exit "$?"
     done | tail -n +2 | git_pager
 }
 
