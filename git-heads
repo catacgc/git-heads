@@ -32,7 +32,7 @@ fi
 git_branch_args="--color=never"
 git_branch_scope=""
 git_log_args="--color=$color_auto --max-count=1"
-heads="true"
+mode="heads"
 
 while test "$#" -gt 0; do
     case "$1" in
@@ -52,26 +52,26 @@ while test "$#" -gt 0; do
             shift
             ;;
         (-b|--branch|--branches)
-            heads="false"
+            mode="branches"
             shift
             ;;
         (--head|--heads)
-            heads="true"
+            mode="heads"
             shift
             ;;
         (--contains|--merged|--no-merged)
-            if test -n "$2" -a "$2" = "${2#-}"; then        ## If it begins with
-                git_branch_args="$git_branch_args '$1=$2'"  ## a "-" it is just
-                shift 2                                     ## another option.
+            if test "$(expr "$2" -)" -eq 1; then
+                git_branch_args="$git_branch_args '$1=$2'"
+                shift 2
             else
                 git_branch_args="$git_branch_args '$1=HEAD'"
                 shift
             fi
-            heads="false"
+            mode="branches"
             ;;
         (--contains=*|--merged=*|--no-merged=*)
             git_branch_args="$git_branch_args '$1'"
-            heads="false"
+            mode="branches"
             shift
             ;;
         (--color)         ## Handle git-log's color option explicitly because
@@ -131,13 +131,18 @@ pairwise_unmerged() {
     done | sort | uniq -c | sed -n "s/^[[:space:]]*$refs[[:space:]]*//p"
 }
 
-if "$heads"; then
-    no_children
-    #pairwise_unmerged
-else
-    eval branches $git_branch_args  ## let git-rev-list do the sorting
-fi | git rev-list --date-order --stdin --no-walk | while IFS= read -r ref; do
+case "$mode" in
+    (branches)
+        eval branches $git_branch_args
+        ;;
+    (heads)
+        no_children
+        ;;
+    (*)
+        die "unable to list commits for mode $mode"
+        ;;
+esac | git rev-list --date-order --stdin --no-walk | while IFS= read -r ref; do
     echo
-    eval git log $git_log_args "'$ref'" || exit "$?"
+    eval git log $git_log_args "'$ref'" -- || exit "$?"
 done | tail -n +2 | git_pager
 
