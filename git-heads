@@ -24,102 +24,20 @@ IFS="$ifs"
 
 require_work_tree
 
-if git config --get-colorbool color.log; then
-    color_auto="always"
-else
-    color_auto="never"
-fi
-git_branch_args="--color=never"
-git_branch_scope=""
-git_log_args="--color=$color_auto --max-count=1"
-mode="heads"
-
-while test "$#" -gt 0; do
-    case "$1" in
-        (-h|--help)  ## Automatically handled by git(1) and git-sh-setup.  Just
-            exit 0   ## set $USAGE.
-            ;;
-        (-a|--all)
-            git_branch_scope="-a"
-            shift
-            ;;
-        (-l|--local)
-            git_branch_scope=""
-            shift
-            ;;
-        (-r|--remote)
-            git_branch_scope="-r"
-            shift
-            ;;
-        (-b|--branch|--branches)
-            mode="branches"
-            shift
-            ;;
-        (--head|--heads)
-            mode="heads"
-            shift
-            ;;
-        (--contains|--merged|--no-merged)
-            if test "$(expr "$2" -)" -eq 1; then
-                git_branch_args="$git_branch_args '$1=$2'"
-                shift 2
-            else
-                git_branch_args="$git_branch_args '$1=HEAD'"
-                shift
-            fi
-            mode="branches"
-            ;;
-        (--contains=*|--merged=*|--no-merged=*)
-            git_branch_args="$git_branch_args '$1'"
-            mode="branches"
-            shift
-            ;;
-        (--color)         ## Handle git-log's color option explicitly because
-            case "$2" in  ## it gets confused by piping to git_pager.
-                (auto)
-                    git_log_args="$git_log_args --color=$color_auto"
-                    shift 2
-                    ;;
-                (always|never)
-                    git_log_args="$git_log_args --color=$2"
-                    shift 2
-                    ;;
-                (*)
-                    git_log_args="$git_log_args --color=always"
-                    shift
-                    ;;
-            esac
-            ;;
-        (--color=auto)
-            git_log_args="$git_log_args --color=$color_auto"
-            shift
-            ;;
-        (--color=*)
-            git_log_args="$git_log_args '$1'"
-            shift
-            ;;
-        (--no-color)
-            git_log_args="$git_log_args --color=never"
-            shift
-            ;;
-        (*)
-            git_log_args="$git_log_args '$1'"
-            shift
-            ;;
-    esac
-done
 
 branches() {
-    git branch $git_branch_scope "$@" --color=never \
+    git branch "$@" --color=never \
             | sed -e 's/^[ *] //' -e 's/^(no branch)$/HEAD/' -e 's/ -> .*$//' \
             | tr '\n' '\0' | xargs -0 git rev-parse --revs-only
 }
+
 
 ## git-rev-list topologically sort the revs and annotates the with their
 ## children.  Commits without children are heads.
 no_children() {
     branches "$@" | git rev-list --children --stdin --topo-order | grep -v ' '
 }
+
 
 ## A branch is a head which wasn't merged in any other branch.
 pairwise_unmerged() {
@@ -131,18 +49,110 @@ pairwise_unmerged() {
     done | sort | uniq -c | sed -n "s/^[[:space:]]*$refs[[:space:]]*//p"
 }
 
-case "$mode" in
-    (branches)
-        eval branches $git_branch_args
-        ;;
-    (heads)
-        no_children
-        ;;
-    (*)
-        die "unable to list commits for mode $mode"
-        ;;
-esac | git rev-list --date-order --stdin --no-walk | while IFS= read -r ref; do
-    echo
-    eval git log $git_log_args "'$ref'" -- || exit "$?"
-done | tail -n +2 | git_pager
+
+main() {
+    if git config --get-colorbool color.log; then
+        color_auto="always"
+    else
+        color_auto="never"
+    fi
+    git_branch_args="--color=never"
+    git_branch_scope=""
+    git_log_args="--color=$color_auto --max-count=1"
+    mode="heads"
+
+    while test "$#" -gt 0; do
+        case "$1" in
+            (-h|--help)  ## Automatically handled by git(1) and git-sh-setup.  Just
+                exit 0   ## set $USAGE.
+                ;;
+            (-a|--all)
+                git_branch_scope="-a"
+                shift
+                ;;
+            (-l|--local)
+                git_branch_scope=""
+                shift
+                ;;
+            (-r|--remote)
+                git_branch_scope="-r"
+                shift
+                ;;
+            (-b|--branch|--branches)
+                mode="branches"
+                shift
+                ;;
+            (--head|--heads)
+                mode="heads"
+                shift
+                ;;
+            (--contains|--merged|--no-merged)
+                if test "$(expr "$2" -)" -eq 1; then
+                    git_branch_args="$git_branch_args '$1=$2'"
+                    shift 2
+                else
+                    git_branch_args="$git_branch_args '$1=HEAD'"
+                    shift
+                fi
+                mode="branches"
+                ;;
+            (--contains=*|--merged=*|--no-merged=*)
+                git_branch_args="$git_branch_args '$1'"
+                mode="branches"
+                shift
+                ;;
+            (--color)         ## Handle git-log's color option explicitly because
+                case "$2" in  ## it gets confused by piping to git_pager.
+                    (auto)
+                        git_log_args="$git_log_args --color=$color_auto"
+                        shift 2
+                        ;;
+                    (always|never)
+                        git_log_args="$git_log_args --color=$2"
+                        shift 2
+                        ;;
+                    (*)
+                        git_log_args="$git_log_args --color=always"
+                        shift
+                        ;;
+                esac
+                ;;
+            (--color=auto)
+                git_log_args="$git_log_args --color=$color_auto"
+                shift
+                ;;
+            (--color=*)
+                git_log_args="$git_log_args '$1'"
+                shift
+                ;;
+            (--no-color)
+                git_log_args="$git_log_args --color=never"
+                shift
+                ;;
+            (*)
+                git_log_args="$git_log_args '$1'"
+                shift
+                ;;
+        esac
+    done
+
+    case "$mode" in
+        (branches)
+            eval branches $git_branch_args $git_branch_scope
+            ;;
+        (heads)
+            no_children $git_branch_scope
+            ;;
+        (*)
+            die "unable to list commits for mode $mode"
+            ;;
+    esac | git rev-list --date-order --stdin --no-walk \
+            | while IFS= read -r ref; do
+        echo
+        eval git log $git_log_args "'$ref'" -- || exit "$?"
+    done | tail -n +2 | git_pager
+}
+
+
+main "$@"
 
