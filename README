@@ -68,5 +68,9 @@ Show the last three commits on every head in a graph:
 
 `git`(1), `git-branch`(1), `git-log`(1), `git wtf -h`, `hg heads --help`.
 
-Homepage: <http://github.com/seschwar/git-heads/>
+Homepage: <http://github.com/seschwar/git-heads>
+
+# BUGS
+
+If you find a bug please report it at <http://github.com/seschwar/git-heads/issues>.
 
